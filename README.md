@@ -3,6 +3,7 @@ This project contains infrastructure as code (IaC) written in Terraform. The Ter
 
 Getting Started
 To use this Terraform code, you will need to have Terraform installed on your machine. You can download Terraform from the official website here.
+link: https://developer.hashicorp.com/terraform/downloads
 
 Once you have Terraform installed, you can clone this repository to your local machine:
 
