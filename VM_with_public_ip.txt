@@ -1,0 +1,78 @@
+# Create a resource group, This code creates an Azure Resource Group named "learning" in the "West Europe" location. 
+resource "azurerm_resource_group" "learning" {
+  name     = "learning"
+  location = "West Europe"
+}
+
+# This code creates an Azure virtual network with the name "avn-1" and an address space of "10.0.0.0/16". It is located in the "learning" resource group and region
+resource "azurerm_virtual_network" "avn-1" {
+  name                = "avn-1"
+  address_space       = ["10.0.0.0/16"]
+  location            = azurerm_resource_group.learning.location
+  resource_group_name = azurerm_resource_group.learning.name
+}
+
+# This code creates a subnet named "internal" with an address prefix of "10.0.2.0/24". It is assigned to the virtual network named "avn-1" within the "learning" resource group.
+resource "azurerm_subnet" "subnet-1" {
+  name                 = "internal"
+  resource_group_name  = azurerm_resource_group.learning.name
+  virtual_network_name = azurerm_virtual_network.avn-1.name
+  address_prefixes     = ["10.0.2.0/24"]
+}
+
+
+# This code creates a static public IP address resource named "mypublicip" in the "learning" resource group located in the "West Europe" region. It is tagged with "environment: Production".
+resource "azurerm_public_ip" "mypublicip" {
+  name                = "mypublicip"
+  resource_group_name = azurerm_resource_group.learning.name
+  location            = azurerm_resource_group.learning.location
+  allocation_method   = "Static"
+
+  tags = {
+    environment = "Production"
+  }
+}
+
+# This code creates a network interface named "nic-1" within the "learning" resource group and located in the "West Europe" region. 
+# It is configured with an IP configuration named "internal" that uses a dynamically allocated private IP address and is associated with a public IP address named "mypublicip".
+resource "azurerm_network_interface" "nic-1" {
+  name                = "nic-1"
+  location            = azurerm_resource_group.learning.location
+  resource_group_name = azurerm_resource_group.learning.name
+
+  ip_configuration {
+    name                          = "internal"
+    subnet_id                     = azurerm_subnet.subnet-1.id
+    private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.mypublicip.id
+  }
+}
+
+# This code block creates an Azure virtual machine using a Linux image, sets its configuration options such as size and login credentials, and connects it to the specified network interface.
+# It also specifies the resource group and location.
+resource "azurerm_linux_virtual_machine" "linux-vm" {
+  name                            = "linux-vm"
+  resource_group_name             = azurerm_resource_group.learning.name
+  location                        = azurerm_resource_group.learning.location
+  size                            = "Standard_F2"
+  admin_username                  = "adminuser"
+  admin_password                  = "Dipu$ingh123"
+  disable_password_authentication = false
+  network_interface_ids = [
+    azurerm_network_interface.nic-1.id,
+  ]
+
+  # This block specifies the OS disk settings with caching and storage account type. 
+  # The source_image_reference block is used to specify the details of the OS image, such as publisher, offer, SKU, and version.
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "0001-com-ubuntu-server-focal"
+    sku       = "20_04-lts"
+    version   = "latest"
+  }
+}
+
